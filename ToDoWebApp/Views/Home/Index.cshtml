@@ -1,0 +1,29 @@
+﻿@model ToDoWebApp.Models.ViewModels.HomeViewModel
+
+<div style="display: flex; gap: 20px; justify-content: center;">
+    <!-- ToDo List -->
+    <div style="flex: 1; border: 1px solid #ccc; padding: 20px; border-radius: 8px;">
+        <h3>ToDo's</h3>
+        @if (Model.ToDo != null)
+        {
+            <partial name="_ToDoList" model="Model.ToDo.ToDoList" />
+        }
+        else
+        {
+            <p>No ToDo items available.</p>
+        }
+    </div>
+
+    <!-- Notes List -->
+    <div style="flex: 1; border: 1px solid #ccc; padding: 20px; border-radius: 8px;">
+        <h3>Notes</h3>
+        @if (Model.Note != null)
+        {
+            <partial name="_NoteList" model="Model.Note.NoteList" />
+        }
+        else
+        {
+            <p>No Notes available.</p>
+        }
+    </div>
+</div>

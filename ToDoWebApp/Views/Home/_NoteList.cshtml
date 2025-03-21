@@ -1,0 +1,37 @@
+﻿@model List<ToDoWebApp.Models.Note>
+
+<table>
+	<thead>
+		<tr>
+			<th class="d-none" scope="col">ID</th>
+			<th scope="col">Title</th>
+			<th scope="col">Content</th>
+			<th scope="col">  </th> @* Boş başlık, buton için *@
+		</tr>
+	</thead>
+	<tbody>
+
+		@foreach (var n in Model)
+		{
+			<tr>
+				<td class="notes-column d-none">@n.Id</td>
+				<td class="notes-column">@n.Title</td>
+				<td class="notes-column">
+
+					@n.Content
+					<!-- Üç nokta menüsü -->
+					<div class="dropdown d-inline ms-2">
+						<button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+							&#x22EE;  <!-- Üç nokta sembolü -->
+						</button>
+						<ul class="dropdown-menu">
+							<li><a class="dropdown-item" href="#" onclick="editNote(@n.Id)">✏Edit</a></li>
+							<li><a class="dropdown-item text-danger" href="#" onclick="deleteNote(@n.Id)">🗑Delete</a></li>
+						</ul>
+					</div>
+				</td>
+			</tr>
+		}
+
+	</tbody>
+</table>

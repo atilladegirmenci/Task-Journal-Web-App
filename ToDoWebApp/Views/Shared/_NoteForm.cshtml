@@ -1,0 +1,28 @@
+﻿@model ToDoWebApp.Models.ViewModels.NoteViewModel
+
+<form asp-action="InsertNote" id="noteForm" method="POST" role="form" class="card p-3 shadow-sm">
+    <h5 class="card-title">Add New Note</h5>
+
+    <!-- Validation Summary -->
+    @* <div asp-validation-summary="All" class="alert alert-danger"></div> *@
+
+    <!-- Hidden ID Field -->
+    <input asp-for="NoteItem.Id" type="hidden" id="Note_Id" name="NoteItem.Id" />
+
+    <!-- Title Field -->
+    <div class="mb-3">
+        <label asp-for="NoteItem.Title" class="form-label">Title</label>
+        <input asp-for="NoteItem.Title" id="Note_Title" name="NoteItem.Title" class="form-control" placeholder="Enter note title" />
+        <span asp-validation-for="NoteItem.Title" class="text-danger"></span>
+    </div>
+
+    <!-- Content Field -->
+    <div class="mb-3">
+        <label asp-for="NoteItem.Content" class="form-label">Content</label>
+        <textarea asp-for="NoteItem.Content" id="Note_Content" name="NoteItem.Content" class="form-control" placeholder="Enter note content"></textarea>
+        <span asp-validation-for="NoteItem.Content" class="text-danger"></span>
+    </div>
+
+    <!-- Submit Button -->
+    <button type="submit" id="note-form-button" class="btn btn-primary w-100">Add Note</button>
+</form>
