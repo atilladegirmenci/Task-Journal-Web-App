@@ -6,6 +6,7 @@ namespace ToDoWebApp.Models.ViewModels
 	{
 		public List<ToDo>? ToDoList { get; set; }
 		public ToDo? ToDoItem { get; set; }
+
 	}
 	
 }

@@ -10,27 +10,42 @@
 	</thead>
 	<tbody>
 
-
 		@foreach (var t in Model)
 		{
-			<tr>
-				<td class="todos-column d-none" scope="row">@t.id</td>
-				<td class="todos-column">@t.name</td>
-				<td class="button-collumn">
-					<div class="dropdown">
-						<button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-							&#x22EE; @* Üç nokta *@
-						</button>
-						<ul class="dropdown-menu">
-							<li><a class="dropdown-item text-danger" href="#" onclick="deleteTodo(@t.id)">🗑 Delete</a></li>
-							<li><a class="dropdown-item text-primary" href="#" onclick="populateForm(@t.id)">✏ Update</a></li>
-						</ul>
-					</div>
-				</td>
-			</tr>
+            <!-- Ana To-Do Satırı -->
+            <tr class="todo-row">
+                <td class="todos-column d-none" scope="row">@t.id</td>
+                <td class="todos-column fw-bold">@t.name</td>
+                <td class="button-column">
+                    <div class="dropdown">
+                        <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            &#x22EE;
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteTodo(@t.id)">🗑 Delete</a></li>
+                            <li><a class="dropdown-item text-primary" href="#" onclick="populateForm(@t.id)">✏ Update</a></li>
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+
+            <!-- Subtasks (Eğer varsa) -->
+            @if (t.SubTasks != null && t.SubTasks.Any())
+            {
+                <tr class="subtask-row">
+                    <td></td> <!-- Boşluk bırak -->
+                    <td colspan="2">
+                        <ul class="list-unstyled ms-4">
+                            @foreach (var subtask in t.SubTasks)
+                            {
+                                <li>✔ @subtask.Content</li>
+                            }
+                        </ul>
+                    </td>
+                </tr>
+            }
+
 		}
-
-
 
 	</tbody>
 </table>

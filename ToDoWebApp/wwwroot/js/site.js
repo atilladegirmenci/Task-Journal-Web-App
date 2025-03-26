@@ -67,3 +67,49 @@ function editNote(i) {
         }
     });
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+    console.log("🚀 Script Loaded!");
+
+    let subtaskCount = 1;
+
+    const addSubtaskBtn = document.getElementById("add-subtask");
+    const subtaskContainer = document.getElementById("subtasks-container");
+
+    if (!addSubtaskBtn || !subtaskContainer) {
+        console.error("❌ Button or subtask container not found!");
+        return;
+    }
+
+    addSubtaskBtn.addEventListener("click", function () {
+        console.log("✅ Add Subtask button clicked");
+
+        const newSubtaskDiv = document.createElement("div");
+        newSubtaskDiv.classList.add("mb-3", "subtask");
+
+        const newSubtaskLabel = document.createElement("label");
+        newSubtaskLabel.classList.add("form-label");
+        newSubtaskLabel.textContent = "Subtask";
+
+        const newSubtaskInput = document.createElement("input");
+        newSubtaskInput.type = "text";
+        newSubtaskInput.classList.add("form-control");
+        newSubtaskInput.name = `ToDoItem.SubTasks[${subtaskCount}].Content`;
+        newSubtaskInput.placeholder = "Enter subtask";
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.classList.add("btn", "btn-danger", "mt-2");
+        removeBtn.textContent = "-";
+        removeBtn.addEventListener("click", function () {
+            subtaskContainer.removeChild(newSubtaskDiv);
+        });
+
+       /* newSubtaskDiv.appendChild(newSubtaskLabel);*/
+        newSubtaskDiv.appendChild(newSubtaskInput);
+        newSubtaskDiv.appendChild(removeBtn);
+        subtaskContainer.appendChild(newSubtaskDiv);
+
+        subtaskCount++;
+    });
+});

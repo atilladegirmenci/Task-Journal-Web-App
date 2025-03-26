@@ -30,30 +30,54 @@ namespace ToDoWebApp.Controllers
 
         }
 
-		public IActionResult InsertToDo(ToDoViewModel todo)
-		{
-			using (SQLiteConnection con = new SQLiteConnection("Data Source=db.sqlite"))
-			{
-				using (var tableCmd = con.CreateCommand())
-				{
-					con.Open();
-					tableCmd.CommandText = $"INSERT INTO todo (name) VALUES ('{todo.ToDoItem.name}')";
-					try
-					{
-						tableCmd.ExecuteNonQuery();
-					}
-					catch (Exception ex)
-					{
-						Console.WriteLine(ex.Message);
-					}
-				}
+        public IActionResult InsertToDo(ToDoViewModel todo)
+        {
+            using (SQLiteConnection con = new SQLiteConnection("Data Source=db.sqlite"))
+            {
+                try
+                {
+                    con.Open();
 
-				return Redirect("Index");
+                    using (var transaction = con.BeginTransaction())  // Transaction başlatıyoruz
+                    {
+                        // ToDo ekliyoruz
+                        var todoCmd = con.CreateCommand();
+                        todoCmd.CommandText = "INSERT INTO todo (name) VALUES (@name);";
+                        todoCmd.Parameters.AddWithValue("@name", todo.ToDoItem.name);
+                        todoCmd.ExecuteNonQuery();
 
-			}
-			
-		}
-		[HttpGet]
+                        // Son eklenen ToDo'nun ID'sini alıyoruz
+                        var todoIdCmd = con.CreateCommand();
+                        todoIdCmd.CommandText = "SELECT last_insert_rowid();";
+                        var lastInsertedId = todoIdCmd.ExecuteScalar();
+
+                        // Eğer SubTask varsa, her birini ekliyoruz
+                        if (todo.ToDoItem.SubTasks != null && todo.ToDoItem.SubTasks.Any())
+                        {
+                            foreach (var subtask in todo.ToDoItem.SubTasks)
+                            {
+                                var subtaskCmd = con.CreateCommand();
+                                subtaskCmd.CommandText = "INSERT INTO SubTasks (ToDoId, Name) VALUES (@todoId, @name);";
+                                subtaskCmd.Parameters.AddWithValue("@todoId", lastInsertedId);  // Son eklenen ToDo ID'si
+                                subtaskCmd.Parameters.AddWithValue("@name", subtask.Content);
+                                subtaskCmd.ExecuteNonQuery();
+                            }
+                        }
+
+                        // Transaction'ı commit ediyoruz
+                        transaction.Commit();
+                    }
+
+                    return RedirectToAction("Index");  // Index sayfasına yönlendiriyoruz
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message); 
+                    return View(todo);                  }
+            }
+        }
+       
+        [HttpGet]
 		public JsonResult PopulateForm(int id)
 		{
 			var todo = GetById(id);
@@ -131,67 +155,100 @@ namespace ToDoWebApp.Controllers
 			{
 				using (var tableCmd = con.CreateCommand())
 				{
+					//delete subtasks of todo
 					con.Open();
-					tableCmd.CommandText = $"DELETE from todo WHERE Id= '{id}'";
-					try
-					{
-						tableCmd.ExecuteNonQuery();
-					}
-					catch(Exception ex)
-					{
-						Console.WriteLine(ex.Message);
-					}
+                    tableCmd.CommandText = $"DELETE FROM  SubTasks WHERE ToDoId = {id}";
+                    try
+                    {
+                        tableCmd.ExecuteNonQuery();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Error deleting subtasks: " + ex.Message);
+                        return Json(new { success = false, message = "Failed to delete subtasks." });
+                    }
 					
-				}
+					//delete the todo
+                    tableCmd.CommandText = $"DELETE from todo WHERE Id = {id}";
+                    try
+                    {
+                        tableCmd.ExecuteNonQuery();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Error deleting todo: " + ex.Message);
+                        return Json(new { success = false, message = "Failed to delete to-do." });
+                    }
+
+                }
 			}
 			
-			return Json(new { });
+			return Json(new { success = true, message = "To-Do deleted successfully." });
 
 		}
 
 		internal ToDoViewModel GetAllToDos()
 		{
-			List<ToDo> todolist = new List<ToDo>();
+            List<ToDo> todolist = new List<ToDo>();
 
-			using (SQLiteConnection con = new SQLiteConnection("Data Source=db.sqlite"))
-			{
-				using (var tableCmd = con.CreateCommand())
-				{
-					con.Open();
-					tableCmd.CommandText = "select * from todo";
+            using (SQLiteConnection con = new SQLiteConnection("Data Source=db.sqlite"))
+            {
+                using (var tableCmd = con.CreateCommand())
+                {
+                    con.Open();
 
-					using (var reader = tableCmd.ExecuteReader())
-					{
-						if (reader.HasRows)
-						{
-							while (reader.Read())
-							{
-								todolist.Add(
-									new ToDo
-									{
-										id = reader.GetInt32(0),
-										name = reader.GetString(1)
-									});
-							}
+                    // ToDo ve SubTask tablolarını birleştiren SQL sorgusu
+                    tableCmd.CommandText = @"
+                SELECT t.Id AS ToDoId, t.Name AS ToDoName, 
+                       s.Id AS SubTaskId, s.Name AS SubTaskContent
+                FROM todo t
+                LEFT JOIN SubTasks s ON t.id = s.ToDoId
+                ORDER BY t.Id, s.Id"; 
 
-							return new ToDoViewModel
-							{
-								ToDoList = todolist
-							};
-						}
-						else
-						{
-							return new ToDoViewModel
-							{
-								ToDoList = todolist
-							};
-						}
-					}
-				}
+                    using (var reader = tableCmd.ExecuteReader())
+                    {
+                        Dictionary<int, ToDo> todoDict = new Dictionary<int, ToDo>();
 
-				
-			}
-		}
+                        while (reader.Read())
+                        {
+                            int todoId = reader.GetInt32(0);
+                            string todoName = reader.GetString(1);
+                            int? subTaskId = reader.IsDBNull(2) ? (int?)null : reader.GetInt32(2);
+                            string subTaskContent = reader.IsDBNull(3) ? null : reader.GetString(3);
+
+                            // Eğer görev daha önce eklenmediyse, listeye ekle
+                            if (!todoDict.ContainsKey(todoId))
+                            {
+                                todoDict[todoId] = new ToDo
+                                {
+                                    id = todoId,
+                                    name = todoName,
+                                    SubTasks = new List<SubTask>()
+                                };
+                            }
+
+                            // Subtask varsa, ekleyelim
+                            if (subTaskId.HasValue)
+                            {
+                                todoDict[todoId].SubTasks.Add(new SubTask
+                                {
+                                    Id = subTaskId.Value,
+                                    Content = subTaskContent,
+                                    ToDoId = todoId
+                                });
+                            }
+                        }
+
+                        todolist = todoDict.Values.ToList();
+                    }
+                }
+            }
+
+            return new ToDoViewModel
+            {
+                ToDoList = todolist
+            };
+        }
 		
 		[HttpPost]
 		public IActionResult InsertNote(NoteViewModel model)

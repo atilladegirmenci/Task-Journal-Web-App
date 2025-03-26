@@ -3,8 +3,7 @@
 <form asp-action="InsertToDo" id="todoForm" method="POST" role="form" class="card p-3 shadow-sm">
     <h5 class="card-title">Add New To-Do</h5>
 
-    <!-- Validation Summary -->
-    @* <div asp-validation-summary="All" class="alert alert-danger"></div> *@
+   
 
     <!-- Hidden ID Field -->
     <input asp-for="ToDoItem.id" id="Todo_Id" type="hidden" name="ToDoItem.id" />
@@ -16,6 +15,18 @@
         <span asp-validation-for="ToDoItem.name" class="text-danger"></span>
     </div>
 
+    <!-- Subtasks Section -->
+    <div id="subtasks-container">
+        <div class="mb-3 subtask">
+            <label class="form-label">Subtask</label>
+            <input type="text" name="ToDoItem.SubTasks[0].Content" class="form-control" placeholder="Enter subtask" />
+        </div>
+    </div>
+
+    <!-- Button to add more subtasks -->
+    <button type="button" id="add-subtask" class="btn btn-info w-100">Add Subtask</button>
+
     <!-- Submit Button -->
     <button type="submit" id="todo-form-button" class="btn btn-success w-100">Add To-Do</button>
 </form>
+
