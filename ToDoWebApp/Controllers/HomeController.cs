@@ -88,65 +88,158 @@ namespace ToDoWebApp.Controllers
 
 		internal ToDo GetById(int id)
 		{
-			using (SQLiteConnection con = new SQLiteConnection("Data Source=db.sqlite"))
-			{
-				con.Open();
-				using (var tableCmd = con.CreateCommand())
-				{
-					tableCmd.CommandText = "SELECT * FROM todo WHERE Id = @id";
-					tableCmd.Parameters.AddWithValue("@id", id);
-					using (var reader = tableCmd.ExecuteReader())
-					{
-						if (reader.HasRows)
-						{
-							reader.Read();
-							return new ToDo
-							{
-								id = reader.GetInt32(0),
-								name = reader.GetString(1)
-							};
-						}
-					}
-				}
-			}
-			return new ToDo();
-			
-		}
+            using (SQLiteConnection con = new SQLiteConnection("Data Source=db.sqlite"))
+            {
+                con.Open();
+                using (var tableCmd = con.CreateCommand())
+                {
+                    // ToDo'yu almak için sorgu
+                    tableCmd.CommandText = "SELECT * FROM todo WHERE Id = @id";
+                    tableCmd.Parameters.AddWithValue("@id", id);
+
+                    using (var reader = tableCmd.ExecuteReader())
+                    {
+                        if (reader.HasRows)
+                        {
+                            reader.Read();
+                            var todo = new ToDo
+                            {
+                                id = reader.GetInt32(0),
+                                name = reader.GetString(1),
+                                // Diğer ToDo özellikleri buraya eklenebilir
+                            };
+
+                            // SubTasks'leri almak için sorgu
+                            var subtaskCmd = con.CreateCommand();
+                            subtaskCmd.CommandText = "SELECT * FROM SubTasks WHERE TodoId = @id";
+                            subtaskCmd.Parameters.AddWithValue("@id", id);
+
+                            using (var subtaskReader = subtaskCmd.ExecuteReader())
+                            {
+                                // SubTask'leri ToDo'ya ekle
+                                var subTasks = new List<SubTask>();
+                                while (subtaskReader.Read())
+                                {
+                                    subTasks.Add(new SubTask
+                                    {
+                                        Id = subtaskReader.GetInt32(0),
+										ToDoId = subtaskReader.GetInt32(1),
+                                        Content = subtaskReader.GetString(2),
+                                       
+                                    });
+                                }
+
+                                // SubTasks'leri ToDo nesnesine ata
+                                todo.SubTasks = subTasks;
+                            }
+
+                            return todo;
+                        }
+                    }
+                }
+            }
+
+            return null;  
+
+        }
 
 		[HttpPost]
 		public IActionResult UpdateToDo(ToDoViewModel model)
 		{
-			if (model.ToDoItem == null)
-			{
-				Console.WriteLine("Model binding failed! No ToDoItem found.");
-				return RedirectToAction("Index");
-			}
 
-			Console.WriteLine($"Update method was called! ID: {model.ToDoItem.id}, Name: {model.ToDoItem.name}");
+            if (model.ToDoItem == null)
+            {
+                Console.WriteLine("Model binding failed! No ToDoItem found.");
+                return RedirectToAction("Index");
+            }
 
-			using (SQLiteConnection con = new SQLiteConnection("Data Source=db.sqlite"))
-			{
-				con.Open();
-				using (var tableCmd = con.CreateCommand())
-				{
-					tableCmd.CommandText = "UPDATE todo SET name = @name WHERE Id = @id";
-					tableCmd.Parameters.AddWithValue("@name", model.ToDoItem.name);
-					tableCmd.Parameters.AddWithValue("@id", model.ToDoItem.id);
+            Console.WriteLine($"Update method was called! ID: {model.ToDoItem.id}, Name: {model.ToDoItem.name}");
 
-					try
-					{
-						int rowsAffected = tableCmd.ExecuteNonQuery();
-						Console.WriteLine($"Rows updated: {rowsAffected}");
-					}
-					catch (Exception ex)
-					{
-						Console.WriteLine($"SQL Error: {ex.Message}");
-					}
-				}
-			}
+            using (SQLiteConnection con = new SQLiteConnection("Data Source=db.sqlite"))
+            {
+                con.Open();
+                using (var transaction = con.BeginTransaction()) // Transaction başlat
+                {
+                    try
+                    {
+                        // 1️⃣ Ana görevin adını güncelle
+                        using (var tableCmd = con.CreateCommand())
+                        {
+                            tableCmd.CommandText = "UPDATE todo SET name = @name WHERE Id = @id";
+                            tableCmd.Parameters.AddWithValue("@name", model.ToDoItem.name);
+                            tableCmd.Parameters.AddWithValue("@id", model.ToDoItem.id);
+                            int rowsAffected = tableCmd.ExecuteNonQuery();
+                            Console.WriteLine($"Todo updated: {rowsAffected} row(s)");
+                        }
 
-			return RedirectToAction("Index");
-		}
+                        // Önce mevcut subtasks'leri temizle
+                        using (var deleteCmd = con.CreateCommand())
+                        {
+                            deleteCmd.CommandText = "DELETE FROM SubTasks WHERE ToDoId = @todoId";
+                            deleteCmd.Parameters.AddWithValue("@todoId", model.ToDoItem.id);
+                            deleteCmd.ExecuteNonQuery();
+                            Console.WriteLine("Old subtasks deleted.");
+                        }
+
+                        // Yeni subtasks'leri ekle
+                        if (model.ToDoItem.SubTasks != null && model.ToDoItem.SubTasks.Any())
+                        {
+                            foreach (var subtask in model.ToDoItem.SubTasks)
+                            {
+                                using (var subtaskCmd = con.CreateCommand())
+                                {
+                                    subtaskCmd.CommandText = "INSERT INTO SubTasks (Name, ToDoId) VALUES (@content, @todoId)";
+                                    subtaskCmd.Parameters.AddWithValue("@content", subtask.Content);
+                                    subtaskCmd.Parameters.AddWithValue("@todoId", model.ToDoItem.id);
+                                    subtaskCmd.ExecuteNonQuery();
+                                }
+                                Console.WriteLine($"Inserted subtask: {subtask.Content}");
+                            }
+                        }
+
+                        transaction.Commit();
+                        Console.WriteLine("Transaction committed successfully.");
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback(); 
+                        Console.WriteLine($"SQL Error: {ex.Message}");
+                    }
+                }
+            }
+
+            return RedirectToAction("Index");
+            //if (model.ToDoItem == null)
+            //{
+            //	Console.WriteLine("Model binding failed! No ToDoItem found.");
+            //	return RedirectToAction("Index");
+            //}
+
+            //Console.WriteLine($"Update method was called! ID: {model.ToDoItem.id}, Name: {model.ToDoItem.name}");
+
+            //using (SQLiteConnection con = new SQLiteConnection("Data Source=db.sqlite"))
+            //{
+            //	con.Open();
+            //	using (var tableCmd = con.CreateCommand())
+            //	{
+            //		tableCmd.CommandText = "UPDATE todo SET name = @name WHERE Id = @id";
+            //		tableCmd.Parameters.AddWithValue("@name", model.ToDoItem.name);
+            //		tableCmd.Parameters.AddWithValue("@id", model.ToDoItem.id);
+
+            //		try
+            //		{
+            //			int rowsAffected = tableCmd.ExecuteNonQuery();
+            //			Console.WriteLine($"Rows updated: {rowsAffected}");
+            //		}
+            //		catch (Exception ex)
+            //		{
+            //			Console.WriteLine($"SQL Error: {ex.Message}");
+            //		}
+            //	}
+            //}
+
+            //return RedirectToAction("Index");
+        }
 
 
 		public JsonResult Delete(int id)
