@@ -158,11 +158,11 @@ namespace ToDoWebApp.Controllers
             using (SQLiteConnection con = new SQLiteConnection("Data Source=db.sqlite"))
             {
                 con.Open();
-                using (var transaction = con.BeginTransaction()) // Transaction başlat
+                using (var transaction = con.BeginTransaction())
                 {
                     try
                     {
-                        // 1️⃣ Ana görevin adını güncelle
+                        //  Ana görevin adını güncelle
                         using (var tableCmd = con.CreateCommand())
                         {
                             tableCmd.CommandText = "UPDATE todo SET name = @name WHERE Id = @id";
@@ -172,7 +172,7 @@ namespace ToDoWebApp.Controllers
                             Console.WriteLine($"Todo updated: {rowsAffected} row(s)");
                         }
 
-                        // Önce mevcut subtasks'leri temizle
+                        // delete current subtasks first
                         using (var deleteCmd = con.CreateCommand())
                         {
                             deleteCmd.CommandText = "DELETE FROM SubTasks WHERE ToDoId = @todoId";
@@ -181,10 +181,24 @@ namespace ToDoWebApp.Controllers
                             Console.WriteLine("Old subtasks deleted.");
                         }
 
-                        // Yeni subtasks'leri ekle
-                        if (model.ToDoItem.SubTasks != null && model.ToDoItem.SubTasks.Any())
+                        // add new ones after
+                        model.ToDoItem.SubTasks ??= new List<SubTask>();
+
+                        Console.WriteLine("🔍 Incoming SubTasks from form:");
+
+                        if (!model.ToDoItem.SubTasks.Any())
                         {
-                            foreach (var subtask in model.ToDoItem.SubTasks)
+                            Console.WriteLine("⚠️ No subtasks received! SubTasks is empty.");
+                        }
+                        else
+                        {
+                            for (int i = 0; i < model.ToDoItem.SubTasks.Count; i++)
+                            {
+                                var sub = model.ToDoItem.SubTasks[i];
+                                Console.WriteLine($"📌 SubTask[{i}]: {sub?.Content}");
+                            }
+                        }
+                        foreach (var subtask in model.ToDoItem.SubTasks)
                             {
                                 using (var subtaskCmd = con.CreateCommand())
                                 {
@@ -195,7 +209,7 @@ namespace ToDoWebApp.Controllers
                                 }
                                 Console.WriteLine($"Inserted subtask: {subtask.Content}");
                             }
-                        }
+                        
 
                         transaction.Commit();
                         Console.WriteLine("Transaction committed successfully.");
@@ -209,36 +223,6 @@ namespace ToDoWebApp.Controllers
             }
 
             return RedirectToAction("Index");
-            //if (model.ToDoItem == null)
-            //{
-            //	Console.WriteLine("Model binding failed! No ToDoItem found.");
-            //	return RedirectToAction("Index");
-            //}
-
-            //Console.WriteLine($"Update method was called! ID: {model.ToDoItem.id}, Name: {model.ToDoItem.name}");
-
-            //using (SQLiteConnection con = new SQLiteConnection("Data Source=db.sqlite"))
-            //{
-            //	con.Open();
-            //	using (var tableCmd = con.CreateCommand())
-            //	{
-            //		tableCmd.CommandText = "UPDATE todo SET name = @name WHERE Id = @id";
-            //		tableCmd.Parameters.AddWithValue("@name", model.ToDoItem.name);
-            //		tableCmd.Parameters.AddWithValue("@id", model.ToDoItem.id);
-
-            //		try
-            //		{
-            //			int rowsAffected = tableCmd.ExecuteNonQuery();
-            //			Console.WriteLine($"Rows updated: {rowsAffected}");
-            //		}
-            //		catch (Exception ex)
-            //		{
-            //			Console.WriteLine($"SQL Error: {ex.Message}");
-            //		}
-            //	}
-            //}
-
-            //return RedirectToAction("Index");
         }
 
 

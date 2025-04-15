@@ -12,7 +12,15 @@
 
     });
 }
-
+function updateSubtaskIndexes() {
+    const subtaskDivs = document.querySelectorAll("#subtasks-container .subtask");
+    subtaskDivs.forEach((div, index) => {
+        const input = div.querySelector("input");
+        if (input) {
+            input.name = `ToDoItem.SubTasks[${index}].Content`;
+        }
+    });
+}
 function populateForm(i) {
     $.ajax({
         url: '/Home/PopulateForm',
@@ -33,43 +41,46 @@ function populateForm(i) {
 
             const subtaskContainer = document.getElementById("subtasks-container");
 
+            const subtaskTitle = document.createElement("label");
+            subtaskTitle.classList.add("form-label", "mt-2");
+            subtaskTitle.textContent = "Subtasks";
+            subtaskContainer.appendChild(subtaskTitle);
+
             // Populate subtasks if any exist
             let subtaskCount = 0;  // Start counting from 0 for indexing
             response.subTasks.forEach(subtask => {
                 console.log("Subtask Content:", subtask.content);
 
                 const newSubtaskDiv = document.createElement("div");
-                newSubtaskDiv.classList.add("mb-3", "subtask");
-
-                const newSubtaskLabel = document.createElement("label");
-                newSubtaskLabel.classList.add("form-label");
-                newSubtaskLabel.textContent = "Subtask";
-
+                newSubtaskDiv.classList.add("mb-1", "subtask","d-flex","align-items-center","gap-2");
+                
                 const newSubtaskInput = document.createElement("input");
                 newSubtaskInput.type = "text";
-                newSubtaskInput.classList.add("form-control");
+                newSubtaskInput.classList.add("form-control", "flex-grow-1");
                 newSubtaskInput.name = `ToDoItem.SubTasks[${subtaskCount}].Content`; // Dynamically set the name attribute
                 newSubtaskInput.value = subtask.content; // Populate the input with the existing subtask content
                 newSubtaskInput.placeholder = "Enter subtask";
                 
                 const removeBtn = document.createElement("button");
                 removeBtn.type = "button";
-                removeBtn.classList.add("btn", "btn-danger", "mt-2");
+                removeBtn.classList.add("btn", "btn-danger");
                 removeBtn.textContent = "-";
                 removeBtn.addEventListener("click", function () {
                     subtaskContainer.removeChild(newSubtaskDiv);
+                    updateSubtaskIndexes();
                 });
 
-                newSubtaskDiv.appendChild(newSubtaskLabel);  // Add label
                 newSubtaskDiv.appendChild(newSubtaskInput);  // Add input field
                 newSubtaskDiv.appendChild(removeBtn);       // Add remove button
                 subtaskContainer.appendChild(newSubtaskDiv); // Append the new subtask div to the container
 
                 subtaskCount++; // Increment subtask count for next input
+                
             });
-
+            
             // Show the "Add Subtask" button again in case it's hidden when editing
             $("#add-subtask").show();
+            updateSubtaskIndexes();
         },
         error: function (xhr, status, error) {
             console.log("❌ Error fetching todo:", error);
@@ -112,16 +123,8 @@ function editNote(i) {
     });
 }
 
-function updateSubtaskIndexes() {
-    const subtaskInputs = document.querySelectorAll("#subtasks-container .subtask input");
-    subtaskInputs.forEach((input, index) => {
-        input.name = `ToDoItem.SubTasks[${index}].Content`;
-    });
-}
 document.addEventListener("DOMContentLoaded", function () {
     console.log("🚀 Script Loaded!");
-
-    let subtaskCount = 1;
 
     const addSubtaskBtn = document.getElementById("add-subtask");
     const subtaskContainer = document.getElementById("subtasks-container");
@@ -131,38 +134,39 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
     }
 
-    addSubtaskBtn.addEventListener("click", function () {
-        console.log("✅ Add Subtask button clicked");
+    function createSubtaskElement() {
+        const div = document.createElement("div");
+        div.classList.add("mb-3", "subtask","d-flex", "align-items,center","gap-2");
 
-        const newSubtaskDiv = document.createElement("div");
-        newSubtaskDiv.classList.add("mb-3", "subtask");
-
-        const newSubtaskLabel = document.createElement("label");
-        newSubtaskLabel.classList.add("form-label");
-        newSubtaskLabel.textContent = "Subtask";
-
-        const newSubtaskInput = document.createElement("input");
-        newSubtaskInput.type = "text";
-        newSubtaskInput.classList.add("form-control");
-        newSubtaskInput.name = `ToDoItem.SubTasks[${subtaskCount}].Content`;
-        newSubtaskInput.placeholder = "Enter subtask";
+        const input = document.createElement("input");
+        input.type = "text";
+        input.classList.add("form-control","flex-grow-1");
+        input.placeholder = "Enter subtask";
 
         const removeBtn = document.createElement("button");
         removeBtn.type = "button";
-        removeBtn.classList.add("btn", "btn-danger", "mt-2");
+        removeBtn.classList.add("btn", "btn-danger");
         removeBtn.textContent = "-";
-        removeBtn.addEventListener("click", function () {
-            subtaskContainer.removeChild(newSubtaskDiv);
+
+        removeBtn.addEventListener("click", () => {
+            div.remove();
             updateSubtaskIndexes();
         });
 
-       /* newSubtaskDiv.appendChild(newSubtaskLabel);*/
-        newSubtaskDiv.appendChild(newSubtaskInput);
-        newSubtaskDiv.appendChild(removeBtn);
-        subtaskContainer.appendChild(newSubtaskDiv);
+        div.appendChild(input);
+        div.appendChild(removeBtn);
 
-        subtaskCount++;
+        return div;
+    }
+
+    addSubtaskBtn.addEventListener("click", function () {
+        console.log("✅ Add Subtask button clicked");
+        const newSubtask = createSubtaskElement();
+        subtaskContainer.appendChild(newSubtask);
         updateSubtaskIndexes();
     });
-    updateSubtaskIndexes();
+
+    updateSubtaskIndexes(); // in case preloaded items exist
 });
+
+

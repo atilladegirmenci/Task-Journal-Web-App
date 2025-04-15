@@ -17,14 +17,16 @@
 
     <!-- Subtasks Section -->
     <div id="subtasks-container">
-        <div class="mb-3 subtask">
+        <div class="mb-1 subtask">
             <label class="form-label">Subtask</label>
             <input type="text" name="ToDoItem.SubTasks[0].Content" class="form-control" placeholder="Enter subtask" />
         </div>
     </div>
 
     <!-- Button to add more subtasks -->
-    <button type="button" id="add-subtask" class="btn btn-info w-100">Add Subtask</button>
+    <div class="mb-3">
+        <button type="button" id="add-subtask" class="btn btn-secondary w-100">Add Subtask</button>
+    </div></>
 
     <!-- Submit Button -->
     <button type="submit" id="todo-form-button" class="btn btn-success w-100">Add To-Do</button>
