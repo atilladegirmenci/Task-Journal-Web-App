@@ -1,7 +1,7 @@
 ﻿@model ToDoWebApp.Models.ViewModels.NoteViewModel
 
 <form asp-action="InsertNote" id="noteForm" method="POST" role="form" class="card p-3 shadow-sm">
-    <h5 class="card-title">Add New Note</h5>
+    <h5 style="text-align: center" class="card-title">Add New Note</h5>
 
     <!-- Validation Summary -->
     @* <div asp-validation-summary="All" class="alert alert-danger"></div> *@
@@ -19,7 +19,7 @@
     <!-- Content Field -->
     <div class="mb-3">
         <label asp-for="NoteItem.Content" class="form-label">Content</label>
-        <textarea asp-for="NoteItem.Content" id="Note_Content" name="NoteItem.Content" class="form-control" placeholder="Enter note content"></textarea>
+        <textarea rows="3" asp-for="NoteItem.Content"  id="Note_Content" name="NoteItem.Content" class="form-control" placeholder="Enter note content"></textarea>
         <span asp-validation-for="NoteItem.Content" class="text-danger"></span>
     </div>
 

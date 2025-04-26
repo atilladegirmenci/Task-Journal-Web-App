@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Data.SqlClient;
 using System.Data.SQLite;
 using System.Diagnostics;
 using ToDoWebApp.Models;
@@ -144,6 +145,35 @@ namespace ToDoWebApp.Controllers
         }
 
 		[HttpPost]
+		public async Task<IActionResult> UpdateSubTaskStatus(int id, bool isCompleted)
+		{
+			using (SQLiteConnection con = new SQLiteConnection("Data Source=db.sqlite"))
+			{
+			     con.Open();
+
+				// SQL sorgusu: IsCompleted değerini güncelleme
+                var command = con.CreateCommand();
+                command.CommandText = "UPDATE SubTasks SET IsCompleted = @IsCompleted WHERE Id = @Id";
+				command.Parameters.AddWithValue("@IsCompleted", isCompleted);
+				command.Parameters.AddWithValue("@Id", id);
+
+				// Sorguyu çalıştırma
+				int result = await command.ExecuteNonQueryAsync();
+
+				if (result > 0)
+				{
+					return Ok();  // Başarılı yanıt
+				}
+				else
+				{
+					return BadRequest();  // Hata durumunda
+				}
+			}
+
+			// Güncelleme işleminden sonra, aynı sayfaya yönlendirebiliriz
+			return RedirectToAction("Index");  // Ya da uygun bir sayfaya yönlendirin
+		}
+		[HttpPost]
 		public IActionResult UpdateToDo(ToDoViewModel model)
 		{
 
@@ -264,6 +294,7 @@ namespace ToDoWebApp.Controllers
 
 		}
 
+
 		internal ToDoViewModel GetAllToDos()
 		{
             List<ToDo> todolist = new List<ToDo>();
@@ -277,7 +308,7 @@ namespace ToDoWebApp.Controllers
                     // ToDo ve SubTask tablolarını birleştiren SQL sorgusu
                     tableCmd.CommandText = @"
                 SELECT t.Id AS ToDoId, t.Name AS ToDoName, 
-                       s.Id AS SubTaskId, s.Name AS SubTaskContent
+                       s.Id AS SubTaskId, s.Name AS SubTaskContent, s.IsCompleted 
                 FROM todo t
                 LEFT JOIN SubTasks s ON t.id = s.ToDoId
                 ORDER BY t.Id, s.Id"; 
@@ -291,10 +322,11 @@ namespace ToDoWebApp.Controllers
                             int todoId = reader.GetInt32(0);
                             string todoName = reader.GetString(1);
                             int? subTaskId = reader.IsDBNull(2) ? (int?)null : reader.GetInt32(2);
-                            string subTaskContent = reader.IsDBNull(3) ? null : reader.GetString(3);
+                            string? subTaskContent = reader.IsDBNull(3) ? null : reader.GetString(3);
+							bool? isCompleted = reader.IsDBNull(4) ? (bool?)null : reader.GetBoolean(4); 
 
-                            // Eğer görev daha önce eklenmediyse, listeye ekle
-                            if (!todoDict.ContainsKey(todoId))
+							// Eğer görev daha önce eklenmediyse, listeye ekle
+							if (!todoDict.ContainsKey(todoId))
                             {
                                 todoDict[todoId] = new ToDo
                                 {
@@ -311,8 +343,9 @@ namespace ToDoWebApp.Controllers
                                 {
                                     Id = subTaskId.Value,
                                     Content = subTaskContent,
-                                    ToDoId = todoId
-                                });
+                                    ToDoId = todoId,
+									IsCompleted = isCompleted ?? false
+								});
                             }
                         }
 

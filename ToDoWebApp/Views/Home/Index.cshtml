@@ -3,7 +3,7 @@
 <div style="display: flex; gap: 20px; justify-content: center;">
     <!-- ToDo List -->
     <div style="flex: 1; border: 1px solid #ccc; padding: 20px; border-radius: 8px;">
-        <h3>ToDo's</h3>
+        <h3 style="text-align: center">ToDo's</h3>
         @if (Model.ToDo != null)
         {
             <partial name="_ToDoList" model="Model.ToDo.ToDoList" />
@@ -16,7 +16,7 @@
 
     <!-- Notes List -->
     <div style="flex: 1; border: 1px solid #ccc; padding: 20px; border-radius: 8px;">
-        <h3>Notes</h3>
+        <h3 style="text-align: center">Notes</h3>
         @if (Model.Note != null)
         {
             <partial name="_NoteList" model="Model.Note.NoteList" />
@@ -27,3 +27,17 @@
         }
     </div>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var noteList = document.getElementById('note-lists');
+        var todoList = document.getElementById('todo-lists');
+        Sortable.create(todoList, {
+            animation: 150,
+            ghostClass: 'sortable-ghost'
+        });
+        Sortable.create(noteList, {
+            animation: 150,
+            ghostClass: 'sortable-ghost'
+        });
+    });
+</script>
